@@ -1,0 +1,48 @@
+#Replace /Users/<your-email-or-folder>/sales_transform with your Databricks notebook path.
+
+
+name: Deploy Azure Retail Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allows manual run
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SQL_SERVER: ${{ secrets.SQL_SERVER }}
+      SQL_DB: ${{ secrets.SQL_DB }}
+      SQL_USER: ${{ secrets.SQL_USER }}
+      SQL_PASS: ${{ secrets.SQL_PASS }}
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install sqlcmd (for SQL schema deploy)
+        run: |
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools unixodbc-dev
+
+      - name: Deploy SQL schema
+        run: |
+          sqlcmd -S $SQL_SERVER -d $SQL_DB -U $SQL_USER -P $SQL_PASS -i sql/create_sales_table.sql
+
+      - name: Upload Databricks notebook
+        run: |
+          curl -X POST "$DATABRICKS_HOST/api/2.0/workspace/import" \
+            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+            -F path="/Users/<your-email-or-folder>/sales_transform" \
+            -F format="SOURCE" \
+            -F language="PYTHON" \
+            -F content=@notebooks/sales_transform.py
+
+      - name: Run Python anomaly detection
+        run: |
+          pip install pandas
+          python python/detect_anomalies.py
