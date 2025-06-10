@@ -1,0 +1,1 @@
+Add architecture diagrams or flowcharts here (use draw.io, Visio, etc.).

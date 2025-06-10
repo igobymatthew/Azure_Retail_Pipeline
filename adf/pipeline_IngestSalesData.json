@@ -1,0 +1,8 @@
+{
+    "name": "IngestSalesData",
+    "properties": {
+        "activities": [],
+        "annotations": [],
+        "description": "Stub for ingesting sales data from blob to Azure SQL"
+    }
+}
